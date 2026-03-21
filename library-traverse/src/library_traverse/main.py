@@ -107,6 +107,7 @@ def run() -> None:
 
     args = sys.argv[1:]
     pdf_path: Path | None = None
+    html_path: Path | None = None
     config_path: Path | None = None
     detail = False
 
@@ -115,6 +116,9 @@ def run() -> None:
         if args[i] == "--pdf":
             i += 1
             pdf_path = Path(args[i] if i < len(args) else "library_status.pdf")
+        elif args[i] == "--html":
+            i += 1
+            html_path = Path(args[i] if i < len(args) else "library_status.html")
         elif args[i] == "--detail":
             detail = True
         else:
@@ -126,6 +130,12 @@ def run() -> None:
     if pdf_path is not None and results:
         anyio.run(save_as_pdf, results, pdf_path)
         print(f"PDF saved: {pdf_path}")
+
+    if html_path is not None and results:
+        from .html_export import generate_html
+        html_path.parent.mkdir(parents=True, exist_ok=True)
+        html_path.write_text(generate_html(results), encoding="utf-8")
+        print(f"HTML saved: {html_path}")
 
 
 if __name__ == "__main__":

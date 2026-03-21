@@ -1,0 +1,45 @@
+name: 図書館状況チェック
+
+on:
+  schedule:
+    - cron: '0 22 * * *'   # 毎日 7:00 JST (UTC 22:00)
+  workflow_dispatch:         # GitHub画面から手動実行も可能
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        working-directory: library-traverse
+        run: uv sync
+
+      - name: Install Playwright Chromium
+        working-directory: library-traverse
+        run: uv run playwright install chromium --with-deps
+
+      - name: Create config.yaml from secret
+        working-directory: library-traverse
+        run: echo "${{ secrets.CONFIG_YAML }}" > config.yaml
+
+      - name: Run library check
+        working-directory: library-traverse
+        run: uv run library-traverse --detail --html ../docs/index.html
+        continue-on-error: true   # 一部の館が失敗しても続行
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs
+          commit_message: "Update library status"
