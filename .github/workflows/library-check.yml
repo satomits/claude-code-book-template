@@ -2,7 +2,8 @@ name: 図書館状況チェック
 
 on:
   schedule:
-    - cron: '0 22 * * *'   # 毎日 7:00 JST (UTC 22:00)
+    - cron: '0 23 * * *'    # 8:00 JST (UTC 23:00)
+    - cron: '0 0-11 * * *'  # 9:00〜20:00 JST (UTC 0〜11:00)
   workflow_dispatch:         # GitHub画面から手動実行も可能
 
 env:
