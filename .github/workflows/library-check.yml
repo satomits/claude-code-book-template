@@ -36,7 +36,17 @@ jobs:
 
       - name: Create config.yaml from secret
         working-directory: library-traverse
-        run: echo "${{ secrets.CONFIG_YAML }}" > config.yaml
+        run: |
+          cat <<'YAML_EOF' > config.yaml
+          ${{ secrets.CONFIG_YAML }}
+          YAML_EOF
+
+      - name: Check connectivity
+        run: |
+          curl -s -o /dev/null -w "yokohama: %{http_code}\n" \
+            "https://opac.lib.city.yokohama.lg.jp/winj/opac/login.do?lang=ja" || echo "yokohama: 接続失敗"
+          curl -s -o /dev/null -w "kanagawa_pref: %{http_code}\n" \
+            "https://www.klnet.pref.kanagawa.jp/winj/opac/login.do?lang=ja" || echo "kanagawa_pref: 接続失敗"
 
       - name: Run library check
         working-directory: library-traverse
