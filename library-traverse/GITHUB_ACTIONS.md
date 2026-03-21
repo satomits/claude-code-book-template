@@ -46,12 +46,9 @@ libraries:
 
 GitHubリポジトリの **Settings → Pages** を開きます。
 
-- **Source**: `Deploy from a branch`
-- **Branch**: `gh-pages` / `/ (root)`
+- **Source**: `GitHub Actions`
 
-**Save** をクリックします。
-
-> ワークフローが初回実行されると `gh-pages` ブランチが自動作成されます。
+Save は不要です（選択するだけで有効になります）。
 
 ---
 
