@@ -1,0 +1,54 @@
+# 図書館予約・貸出状況チェッカー 設定ファイル
+# このファイルを config.yaml としてコピーし、実際の情報を入力してください
+# config.yaml は .gitignore で管理されます（認証情報を誤ってコミットしないよう注意）
+
+libraries:
+  # 相模原市立図書館 (富士通iLis系)
+  # sagamihara:
+  #   card_number: "***REMOVED***"
+  #   password: "***REMOVED***"
+
+  # 川崎市立図書館 (独自系)
+  # kawasaki:
+  #   card_number: "***REMOVED***"
+  #   password: "***REMOVED***"
+
+  # 横浜市立図書館 (LIMEDIO系)
+  # yokohama:
+  #   card_number: "***REMOVED***"
+  #   password: "***REMOVED***"
+
+  # 神奈川県立図書館 (LIMEDIO系)
+  # kanagawa_pref:
+  #   card_number: "***REMOVED***"
+  #   password: "***REMOVED***"
+
+  # 町田市立図書館 (NEC LiCS-XP)
+  # machida:
+  #   card_number: "***REMOVED***"
+  #   password: "***REMOVED***"
+
+  # 海老名市立図書館 (TRC/CCC独自系)
+  # ebina:
+  #   card_number: "***REMOVED***"
+  #   password: "***REMOVED***"
+
+  # 秦野市立図書館 (NEC LiCS-Re SaaS)
+  # hadano:
+  #   card_number: "***REMOVED***"
+  #   password: "***REMOVED***"
+
+  # 大和市立図書館 (NEC LiCS-XP)
+  # yamato:
+  #   card_number: "***REMOVED***"
+  #   password: "***REMOVED***"
+
+  # 伊勢原市立図書館 (NEC LiCS-Re SaaS)
+  # isehara:
+  #   card_number: "***REMOVED***"
+  #   password: "***REMOVED***"
+
+  # 厚木市立図書館 (LIMEDIO系)
+  # atsugi:
+  #   card_number: "***REMOVED***"
+  #   password: "***REMOVED***"
