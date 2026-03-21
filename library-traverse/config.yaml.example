@@ -1,0 +1,54 @@
+# 図書館予約・貸出状況チェッカー 設定ファイル
+# このファイルを config.yaml としてコピーし、実際の情報を入力してください
+# config.yaml は .gitignore で管理されます（認証情報を誤ってコミットしないよう注意）
+
+libraries:
+  # 相模原市立図書館 (富士通iLis系)
+  # sagamihara:
+  #   card_number: "87854188"
+  #   password: "JH8OUX"
+
+  # 川崎市立図書館 (独自系)
+  # kawasaki:
+  #   card_number: "190001690055"
+  #   password: "32693269"
+
+  # 横浜市立図書館 (LIMEDIO系)
+  # yokohama:
+  #   card_number: "9023109473"
+  #   password: "yokTk4dakb$"
+
+  # 神奈川県立図書館 (LIMEDIO系)
+  # kanagawa_pref:
+  #   card_number: "267818"
+  #   password: "kanTk4dakb$"
+
+  # 町田市立図書館 (NEC LiCS-XP)
+  # machida:
+  #   card_number: "80003858"
+  #   password: "tk4dakbc"
+
+  # 海老名市立図書館 (TRC/CCC独自系)
+  # ebina:
+  #   card_number: "102193638"
+  #   password: "Tk4dakb$"
+
+  # 秦野市立図書館 (NEC LiCS-Re SaaS)
+  # hadano:
+  #   card_number: "11607553"
+  #   password: "11607553"
+
+  # 大和市立図書館 (NEC LiCS-XP)
+  # yamato:
+  #   card_number: "0193777422"
+  #   password: "JH8OUX"
+
+  # 伊勢原市立図書館 (NEC LiCS-Re SaaS)
+  # isehara:
+  #   card_number: "0191452200"
+  #   password: "iseJH8OUX"
+
+  # 厚木市立図書館 (LIMEDIO系)
+  # atsugi:
+  #   card_number: "6078520"
+  #   password: "3269"
