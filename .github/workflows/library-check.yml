@@ -5,6 +5,9 @@ on:
     - cron: '0 22 * * *'   # 毎日 7:00 JST (UTC 22:00)
   workflow_dispatch:         # GitHub画面から手動実行も可能
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: read
   pages: write
@@ -14,8 +17,6 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
