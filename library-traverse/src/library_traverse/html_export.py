@@ -1,5 +1,5 @@
 """モバイルフレンドリーなHTML出力モジュール"""
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
 from html import escape
 
 from .models import LibraryResult
@@ -131,7 +131,8 @@ def _due_badge(due: date | None) -> str:
 
 
 def generate_html(results: list[LibraryResult]) -> str:
-    now = datetime.now().strftime("%Y/%m/%d %H:%M 更新")
+    JST = timezone(timedelta(hours=9))
+    now = datetime.now(JST).strftime("%Y/%m/%d %H:%M 更新")
     body_parts: list[str] = []
 
     for r in results:
