@@ -120,7 +120,8 @@ h1 {
 def _due_badge(due: date | None) -> str:
     if due is None:
         return ""
-    today = date.today()
+    JST = timezone(timedelta(hours=9))
+    today = datetime.now(JST).date()
     days = (due - today).days
     fmt = due.strftime("%Y/%m/%d")
     if days < 0:
