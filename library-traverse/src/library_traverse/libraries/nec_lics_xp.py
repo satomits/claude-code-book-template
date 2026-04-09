@@ -224,12 +224,24 @@ def _parse_yamato_reservations(soup: BeautifulSoup) -> list[ReservationItem]:
 
 
 def _parse_yamato_loans(soup: BeautifulSoup) -> list[LoanItem]:
-    """table#ItemDetaTable から貸出情報を取得する。"""
+    """貸出テーブルから貸出情報を取得する。"""
     items: list[LoanItem] = []
-    table = soup.find("table", {"id": "ItemDetaTable"})
+    table = (
+        soup.find("table", {"id": "ItemDetaTable"})
+        or soup.find("table", {"class": "list"})
+    )
     if table is None:
         return items
     rows = table.find_all("tr")
+    # ヘッダー行から返却期日の列を特定する
+    due_col: int | None = None
+    if rows:
+        headers = [th.get_text(strip=True) for th in rows[0].find_all("th")]
+        for idx, h in enumerate(headers):
+            if "返却" in h:
+                # th の No. 列は th なので td のインデックスは 1 つずれる
+                due_col = idx - 1
+                break
     for tr in rows[1:]:  # ヘッダー行スキップ
         tds = tr.find_all("td")
         if len(tds) < 2:
@@ -238,14 +250,26 @@ def _parse_yamato_loans(soup: BeautifulSoup) -> list[LoanItem]:
         if not resource:
             continue
         title, author = _split_yamato_resource(resource)
-        # 返却期限: 日付パターンを全セルから探す
         due_date: date | None = None
-        for td in tds[2:]:
-            txt = _cell(td)
-            d = _parse_date(txt)
-            if d:
-                due_date = d
-                break
+        if due_col is not None and due_col < len(tds):
+            due_date = _parse_date(_cell(tds[due_col]))
+        if due_date is None:
+            # フォールバック: 2番目の日付を返却期日として使う
+            dates_found = 0
+            for td in tds[1:]:
+                d = _parse_date(_cell(td))
+                if d:
+                    dates_found += 1
+                    if dates_found == 2:
+                        due_date = d
+                        break
+            # 日付が1つしかなければそれを使う
+            if due_date is None and dates_found == 0:
+                for td in tds[1:]:
+                    d = _parse_date(_cell(td))
+                    if d:
+                        due_date = d
+                        break
         items.append(LoanItem(title=title, author=author, due_date=due_date))
     return items
 
