@@ -107,6 +107,8 @@ h1 {
 .badge-overdue    { background: #ffebee; color: #c62828; }
 .badge-status     { background: #e3f2fd; color: #1565c0; }
 .badge-position   { background: #f3e5f5; color: #6a1b9a; }
+.badge-hours      { background: #e8f5e9; color: #2e7d32; font-size: 11px; padding: 2px 7px; border-radius: 10px; }
+.badge-closed     { background: #ffebee; color: #c62828; font-size: 11px; padding: 2px 7px; border-radius: 10px; }
 
 .no-items {
     padding: 10px 14px;
@@ -141,10 +143,16 @@ def generate_html(results: list[LibraryResult]) -> str:
         total_res = len(r.reservations)
         counts = f"貸出 {total_loans} / 予約 {total_res}"
 
+        hours_badge = ""
+        if r.opening_hours == "休館":
+            hours_badge = ' <span class="badge-closed">休館</span>'
+        elif r.opening_hours:
+            hours_badge = f' <span class="badge-hours">{escape(r.opening_hours)}</span>'
+
         parts = [
             f'<div class="library">',
             f'<div class="library-header">'
-            f'{escape(r.library_name)}'
+            f'{escape(r.library_name)}{hours_badge}'
             f'<span class="counts">{counts}</span>'
             f'</div>',
         ]

@@ -172,6 +172,15 @@ wheels = [
 ]
 
 [[package]]
+name = "jpholiday"
+version = "1.0.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5c/0c/1178e0d55e66362c6f2e715aa1665b032be71bf9b9c80a9fe83238d33c81/jpholiday-1.0.3.tar.gz", hash = "sha256:d5a56592fd6a7ceb76d49e1c5f1af806223e0d5d6b9e3bc5477860e6605f4cab", size = 12575, upload-time = "2025-12-26T05:28:11.767Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/11/e9/af0b8cda67530d7ff3d937b785c7901041e38a955b6b66e3c9a23a0d2027/jpholiday-1.0.3-py3-none-any.whl", hash = "sha256:abe5f0191f27a88623a33aaaa7cd04035886b5d7adb41a42eaeba0e721dc1982", size = 16257, upload-time = "2025-12-26T05:28:10.489Z" },
+]
+
+[[package]]
 name = "library-traverse"
 version = "0.1.0"
 source = { editable = "." }
@@ -179,6 +188,7 @@ dependencies = [
     { name = "anyio" },
     { name = "beautifulsoup4" },
     { name = "httpx", extra = ["http2"] },
+    { name = "jpholiday" },
     { name = "lxml" },
     { name = "playwright" },
     { name = "pyyaml" },
@@ -190,6 +200,7 @@ requires-dist = [
     { name = "anyio", specifier = ">=4.0" },
     { name = "beautifulsoup4", specifier = ">=4.12" },
     { name = "httpx", extras = ["http2"], specifier = ">=0.27" },
+    { name = "jpholiday", specifier = ">=0.1.9" },
     { name = "lxml", specifier = ">=5.0" },
     { name = "playwright", specifier = ">=1.58.0" },
     { name = "pyyaml", specifier = ">=6.0" },
