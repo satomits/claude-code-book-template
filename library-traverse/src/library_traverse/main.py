@@ -6,6 +6,7 @@ import anyio
 
 from .config import load_config
 from .display import console, print_results, print_summary
+from .hours import get_today_hours
 from .libraries import LIBRARY_REGISTRY
 from .models import LibraryResult
 from .ndl import enrich_authors_via_ndl
@@ -22,7 +23,8 @@ async def fetch_library(lib_id: str, creds: dict[str, str], detail: bool = False
         )
 
     scraper = scraper_cls(**creds)
-    result = LibraryResult(library_id=lib_id, library_name=scraper.name)
+    result = LibraryResult(library_id=lib_id, library_name=scraper.name,
+                           opening_hours=get_today_hours(lib_id))
 
     try:
         async with scraper:

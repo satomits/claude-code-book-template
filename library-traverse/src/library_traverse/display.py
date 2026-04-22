@@ -28,7 +28,12 @@ def print_results(results: list[LibraryResult]) -> None:
         return
 
     for result in results:
-        title = f"[bold cyan]{result.library_name}[/bold cyan]"
+        hours_tag = ""
+        if result.opening_hours == "休館":
+            hours_tag = " [red]休館[/red]"
+        elif result.opening_hours:
+            hours_tag = f" [green]{result.opening_hours}[/green]"
+        title = f"[bold cyan]{result.library_name}[/bold cyan]{hours_tag}"
 
         if not result.ok():
             console.print(Panel(f"[red]エラー: {result.error}[/red]", title=title))

@@ -41,6 +41,7 @@ class LibraryResult:
     loans: list[LoanItem] = field(default_factory=list)
     reservations: list[ReservationItem] = field(default_factory=list)
     error: str | None = None
+    opening_hours: str = ""
 
     def ok(self) -> bool:
         return self.error is None
