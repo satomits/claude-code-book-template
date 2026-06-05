@@ -56,6 +56,7 @@ class FujitsuIlisScraper:
             ),
         )
         self._page = await context.new_page()
+        self._page.set_default_timeout(60000)
         return self
 
     async def __aexit__(self, *_: object) -> None:

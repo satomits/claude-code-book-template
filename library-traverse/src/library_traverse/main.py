@@ -11,9 +11,26 @@ from .libraries import LIBRARY_REGISTRY
 from .models import LibraryResult
 from .ndl import enrich_authors_via_ndl
 
+MAX_RETRIES = 2
+
+
+async def _try_fetch(scraper, result: LibraryResult) -> LibraryResult:
+    """1回分の取得を試行する。"""
+    async with scraper:
+        logged_in = await scraper.login()
+        if not logged_in:
+            result.error = "ログイン失敗（カード番号またはパスワードを確認してください）"
+            return result
+
+        result.loans = await scraper.get_loans()
+        result.reservations = await scraper.get_reservations()
+        await scraper.logout()
+    result.error = None
+    return result
+
 
 async def fetch_library(lib_id: str, creds: dict[str, str], detail: bool = False) -> LibraryResult:
-    """1図書館のデータを取得する。エラーは LibraryResult.error に格納。"""
+    """1図書館のデータを取得する。タイムアウト時は最大 MAX_RETRIES 回リトライ。"""
     scraper_cls = LIBRARY_REGISTRY.get(lib_id)
     if scraper_cls is None:
         return LibraryResult(
@@ -26,19 +43,19 @@ async def fetch_library(lib_id: str, creds: dict[str, str], detail: bool = False
     result = LibraryResult(library_id=lib_id, library_name=scraper.name,
                            opening_hours=get_today_hours(lib_id))
 
-    try:
-        async with scraper:
-            logged_in = await scraper.login()
-            if not logged_in:
-                result.error = "ログイン失敗（カード番号またはパスワードを確認してください）"
-                return result
+    last_error: str = ""
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            return await _try_fetch(scraper_cls(**creds), result)
+        except Exception as e:  # noqa: BLE001
+            last_error = str(e) or repr(e)
+            if attempt < MAX_RETRIES:
+                console.print(
+                    f"[yellow]⚠ {result.library_name}: リトライ {attempt}/{MAX_RETRIES} ({last_error[:60]})[/yellow]"
+                )
+                await anyio.sleep(3)
 
-            result.loans = await scraper.get_loans()
-            result.reservations = await scraper.get_reservations()
-            await scraper.logout()
-    except Exception as e:  # noqa: BLE001
-        result.error = str(e) or repr(e)
-
+    result.error = last_error
     return result
 
 
