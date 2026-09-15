@@ -13,6 +13,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write   # 失敗時に残ったartifactを削除するために必要
 
 jobs:
   check:
@@ -20,7 +21,7 @@ jobs:
     timeout-minutes: 30
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deploy3.outputs.page_url }}
 
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +52,33 @@ jobs:
         with:
           path: library-traverse/_site
 
-      - name: Deploy to GitHub Pages
-        id: deploy
+      - name: Deploy to GitHub Pages (attempt 1)
+        id: deploy1
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Deploy to GitHub Pages (attempt 2)
+        id: deploy2
+        if: steps.deploy1.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Deploy to GitHub Pages (attempt 3)
+        id: deploy3
+        if: steps.deploy2.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Clean up stale artifact if all deploy attempts failed
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure' && steps.deploy3.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "3回とも失敗したため、次回実行に影響しないようartifactを削除します"
+          ARTIFACT_IDS=$(gh api "/repos/${{ github.repository }}/actions/artifacts" \
+            --jq '.artifacts[] | select(.name=="github-pages") | .id')
+          for id in $ARTIFACT_IDS; do
+            echo "deleting artifact id=$id"
+            gh api -X DELETE "/repos/${{ github.repository }}/actions/artifacts/$id" || true
+          done
+          exit 1
