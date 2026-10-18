@@ -132,50 +132,43 @@ def parse_gps_datetime(s: str) -> datetime | None:
     return None
 
 
-def _get_gpmf_packet_times(video_path: str) -> list[float]:
-    """ffprobe でGPMFストリームの各パケットの動画内タイムスタンプを取得する"""
-    # gpmd (GoPro Metadata) ストリームを探す
-    probe = run([
-        "ffprobe", "-v", "quiet", "-show_streams", "-of", "json", video_path,
-    ], check=False)
-    gpmd_idx = None
-    try:
-        for s in json.loads(probe)["streams"]:
-            if s.get("codec_tag_string") == "gpmd":
-                gpmd_idx = s["index"]
-                break
-    except Exception:
-        pass
-    if gpmd_idx is None:
-        return []
+def _get_gpmf_packet_anchors(video_path: str) -> list[tuple[datetime, float]]:
+    """GPMFパケットごとの (先頭GPSサンプルの時刻, 動画内タイムスタンプ) を返す。
 
-    out = run([
-        "ffprobe", "-v", "quiet",
-        "-select_streams", str(gpmd_idx),
-        "-show_entries", "packet=pts_time",
-        "-of", "csv=p=0", video_path,
-    ], check=False)
-    times = []
+    GPSサンプルは1パケット(約1秒)に約10点入っているため、サンプルの行番号を
+    パケット番号として使うことはできない。exiftool の SampleTime はパケット単位
+    でしか出ないので、パケット先頭のGPS時刻と組にして基準点にする。
+    """
+    out = run(["exiftool", "-ee3", "-p", "$SampleTime#|$GPSDateTime", video_path],
+              check=False)
+    anchors = []
     for line in out.strip().splitlines():
+        parts = line.split("|")
+        if len(parts) < 2:
+            continue
         try:
-            times.append(float(line.strip()))
+            vts = float(parts[0].strip())
         except ValueError:
             continue
-    return times
+        dt = parse_gps_datetime(parts[1].strip())
+        if dt is not None:
+            anchors.append((dt, vts))
+    return anchors
 
 
 def extract_gps_gpmf(video_path: str) -> list[dict]:
-    """GPS抽出: exiftoolの行順序 = GPMFパケット順序 = 動画フレーム順序"""
+    """GPS抽出: exiftoolの行順序 = GPSサンプル順序（1パケットに約10サンプル）"""
     print(f"  exiftool でGPS抽出: {Path(video_path).name}")
     template = "$GPSDateTime|$GPSLatitude|$GPSLongitude|$GPSAltitude|$GPSSpeed3D"
     out = run(["exiftool", "-ee3", "-p", template, video_path], check=False)
 
-    # ffprobe でGPMFパケットの動画内タイムスタンプを取得
-    packet_times = _get_gpmf_packet_times(video_path)
+    # パケットごとの (GPS時刻, 動画内タイムスタンプ) の基準点
+    anchors = _get_gpmf_packet_anchors(video_path)
+    ai = 0
 
     lines = out.strip().splitlines()
     points = []
-    for idx, line in enumerate(lines):
+    for line in lines:
         parts = line.split("|")
         if len(parts) < 3:
             continue
@@ -185,15 +178,20 @@ def extract_gps_gpmf(video_path: str) -> list[dict]:
             alt = float(parts[3].strip().split()[0]) if len(parts) > 3 and parts[3].strip() else 0.0
             dt  = parse_gps_datetime(parts[0].strip())
             if lat is not None and lon is not None and dt is not None:
-                # 動画内タイムスタンプ: パケットタイムがあればそれを使用
-                video_ts = packet_times[idx] if idx < len(packet_times) else None
+                # 動画内タイムスタンプ: このサンプルを含むパケットの基準点から求める
+                video_ts = None
+                if anchors:
+                    while ai + 1 < len(anchors) and anchors[ai + 1][0] <= dt:
+                        ai += 1
+                    a_dt, a_vts = anchors[ai]
+                    video_ts = a_vts + max(0.0, (dt - a_dt).total_seconds())
                 points.append({"time": dt, "lat": lat, "lon": lon,
                                 "alt": alt, "speed_kmh": 0.0,
                                 "video_ts": video_ts})
         except Exception:
             continue
 
-    print(f"    → {len(points)} 点 (パケットタイム: {'あり' if packet_times else 'なし'})")
+    print(f"    → {len(points)} 点 (パケットタイム: {len(anchors)} 個)")
     return points
 
 
@@ -532,6 +530,7 @@ def fuse_gps_points(
     gopro_points: list[dict], iphone_points: list[dict],
     gopro_accuracy: float = 10.0,
     divergence_threshold_m: float = 100.0,
+    max_gap_sec: int = 3,
 ) -> list[dict]:
     """GoProとiPhoneのGPSデータを融合する。
 
@@ -558,8 +557,22 @@ def fuse_gps_points(
         key = gp["time"].replace(microsecond=0)
         ip = iphone_by_sec.get(key)
         if ip is None:
-            fused.append({**gp, "source": "gopro"})
-            n_gopro_only += 1
+            # iPhoneの点が抜けている秒: 前後数秒のiPhone点と比べ、GoProが大きく
+            # ずれていればiPhone位置で代用する（抜けた秒だけGoProの異常値に戻ると
+            # 軌跡が往復して距離が膨らむため）
+            near = next((iphone_by_sec[key + timedelta(seconds=s)]
+                         for d in range(1, max_gap_sec + 1) for s in (-d, d)
+                         if key + timedelta(seconds=s) in iphone_by_sec), None)
+            if near is not None and haversine_m(gp, near) > divergence_threshold_m:
+                fused.append({
+                    **gp,
+                    "lat": near["lat"], "lon": near["lon"], "alt": near["alt"],
+                    "source": "iphone", "gps_unstable": False,
+                })
+                n_diverged += 1
+            else:
+                fused.append({**gp, "source": "gopro"})
+                n_gopro_only += 1
             continue
 
         # GoProとiPhoneの距離差を計算
@@ -615,8 +628,21 @@ def fuse_gps_points(
             })
             n_blended += 1
 
+    # iPhone記録開始前のGoPro点: GoProが起動直後に前回の位置を保持していることがある。
+    # 最初のiPhone点から大きくずれていれば、その位置で固定する（距離に加算しない）
+    first_ip = next((i for i, p in enumerate(fused) if p["source"] != "gopro"), None)
+    n_lead = 0
+    if first_ip:
+        anchor = fused[first_ip]
+        for i in range(first_ip):
+            if haversine_m(fused[i], anchor) > divergence_threshold_m:
+                fused[i] = {**fused[i], "lat": anchor["lat"], "lon": anchor["lon"],
+                            "alt": anchor["alt"], "gps_unstable": True}
+                n_lead += 1
+
     print(f"      GPS融合: iPhone採用={n_iphone}  GoPro採用={n_gopro_only}  "
-          f"加重平均={n_blended}  GoPro異常値→iPhone={n_diverged}")
+          f"加重平均={n_blended}  GoPro異常値→iPhone={n_diverged}  "
+          f"iPhone開始前のGoPro異常値={n_lead}")
     return fused
 
 
@@ -1045,6 +1071,7 @@ def find_mp4_files(mp4_dir: str, date_str: str | None) -> list[str]:
     """ディレクトリからMP4ファイルを収集し、GPS開始時刻でソートして返す"""
     files = sorted(Path(mp4_dir).glob("*.mp4")) + sorted(Path(mp4_dir).glob("*.MP4"))
     files = list(dict.fromkeys(files))  # 重複除去
+    files = [f for f in files if not f.name.startswith(".")]  # macOS の ._ ファイルを除外
 
     if date_str:
         target = datetime.strptime(date_str, "%Y-%m-%d").date()
