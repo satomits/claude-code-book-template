@@ -90,7 +90,7 @@ async def check_yamato_lend():
 
         await page.goto(f"{BASE}/licsxp-opac/WOpacMnuTopInitAction.do?WebLinkFlag=1")
         await page.fill('input[name="username"]', "YAMATO_CARD")
-        await page.fill('input[name="j_password"]', "SAGAMIHARA_PASSWORD")
+        await page.fill('input[name="j_password"]', "YAMATO_PASSWORD")
         await page.click('input[value="ログイン"]')
         await page.wait_for_load_state("networkidle")
 

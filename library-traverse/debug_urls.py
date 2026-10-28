@@ -84,7 +84,7 @@ async def check_yamato_links():
         form = soup.find("form")
         data = {inp["name"]: inp.get("value", "") for inp in form.find_all("input") if inp.get("name")}
         data["username"] = "YAMATO_CARD"
-        data["j_password"] = "SAGAMIHARA_PASSWORD"
+        data["j_password"] = "YAMATO_PASSWORD"
         action = urljoin(str(r.url), form.get("action", "") or f"{base_url}/licsxp-opac/WOpacMnuTopInitAction.do")
         r2 = await c.post(action, data=data)
         soup2 = BeautifulSoup(r2.text, "lxml")
