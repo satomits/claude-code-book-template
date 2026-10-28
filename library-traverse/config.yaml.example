@@ -41,7 +41,7 @@ libraries:
   # 大和市立図書館 (NEC LiCS-XP)
   # yamato:
   #   card_number: "YAMATO_CARD"
-  #   password: "SAGAMIHARA_PASSWORD"
+  #   password: "YAMATO_PASSWORD"
 
   # 伊勢原市立図書館 (NEC LiCS-Re SaaS)
   # isehara:

@@ -188,7 +188,7 @@ async def main():
     await check_kawasaki()
     await check_nec_lics("秦野市立図書館", "https://www.ip.licsre-saas.jp/hadano", "HADANO_CARD", "HADANO_PASSWORD")
     await check_nec_lics("伊勢原市立図書館", "https://www.is.licsre-saas.jp/isehara", "ISEHARA_CARD", "ISEHARA_PASSWORD")
-    await check_nec_lics("大和市立図書館", "https://library.city.yamato.kanagawa.jp", "YAMATO_CARD", "SAGAMIHARA_PASSWORD")
+    await check_nec_lics("大和市立図書館", "https://library.city.yamato.kanagawa.jp", "YAMATO_CARD", "YAMATO_PASSWORD")
     await check_kanagawa_pref()
 
 
