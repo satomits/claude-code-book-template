@@ -87,8 +87,8 @@ async def check_yamato_lend2():
         BASE = "https://library.city.yamato.kanagawa.jp"
 
         await page.goto(f"{BASE}/licsxp-opac/WOpacMnuTopInitAction.do?WebLinkFlag=1")
-        await page.fill('input[name="username"]', "***REMOVED***")
-        await page.fill('input[name="j_password"]', "***REMOVED***")
+        await page.fill('input[name="username"]', "YAMATO_CARD")
+        await page.fill('input[name="j_password"]', "SAGAMIHARA_PASSWORD")
         await page.click('input[value="ログイン"]')
         await page.wait_for_load_state("networkidle")
 
@@ -126,8 +126,8 @@ async def check_yamato_lend2():
 
 async def main():
     await check_licsre_login_form("秦野市立図書館", "https://www.ip.licsre-saas.jp/hadano")
-    await check_licsre_playwright2("秦野市立図書館", "https://www.ip.licsre-saas.jp/hadano", "***REMOVED***", "***REMOVED***")
-    await check_licsre_playwright2("伊勢原市立図書館", "https://www.is.licsre-saas.jp/isehara", "***REMOVED***", "***REMOVED***")
+    await check_licsre_playwright2("秦野市立図書館", "https://www.ip.licsre-saas.jp/hadano", "HADANO_CARD", "HADANO_PASSWORD")
+    await check_licsre_playwright2("伊勢原市立図書館", "https://www.is.licsre-saas.jp/isehara", "ISEHARA_CARD", "ISEHARA_PASSWORD")
     await check_yamato_lend2()
 
 
