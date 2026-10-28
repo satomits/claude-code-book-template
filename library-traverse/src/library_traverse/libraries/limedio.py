@@ -80,14 +80,29 @@ class LimediasScraper:
         page = self._page
         assert page is not None
         await page.goto(url)
-        try:
-            await page.wait_for_function(
-                "!document.body.innerText.includes('Now Loading')",
-                timeout=15000,
-            )
-        except PlaywrightTimeout:
-            pass
-        return BeautifulSoup(await page.content(), "html.parser")
+        # lend-list.do → reserve-list.do のようにJSでリダイレクトされる場合があり、
+        # 遷移途中は document.body が null になるので、ガードした上で数回やり直す
+        for _ in range(3):
+            try:
+                await page.wait_for_load_state("domcontentloaded")
+                await page.wait_for_function(
+                    "document.body !== null && !document.body.innerText.includes('Now Loading')",
+                    timeout=15000,
+                )
+                break
+            except PlaywrightTimeout:
+                break
+            except Exception:  # noqa: BLE001  遷移中にコンテキストが破棄された等
+                await page.wait_for_timeout(1000)
+        for attempt in range(3):
+            try:
+                html = await page.content()
+                break
+            except Exception:  # noqa: BLE001  "page is navigating" 対策
+                if attempt == 2:
+                    raise
+                await page.wait_for_load_state("load")
+        return BeautifulSoup(html, "html.parser")
 
     async def get_loans(self) -> list[LoanItem]:
         # LIMEDIO は lend-list.do から reserve-list.do にリダイレクトする（貸出があっても）
