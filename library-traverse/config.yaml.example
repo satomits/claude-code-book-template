@@ -5,50 +5,50 @@
 libraries:
   # 相模原市立図書館 (富士通iLis系)
   # sagamihara:
-  #   card_number: "87854188"
-  #   password: "JH8OUX"
+  #   card_number: "SAGAMIHARA_CARD"
+  #   password: "SAGAMIHARA_PASSWORD"
 
   # 川崎市立図書館 (独自系)
   # kawasaki:
-  #   card_number: "190001690055"
-  #   password: "32693269"
+  #   card_number: "KAWASAKI_CARD"
+  #   password: "KAWASAKI_PASSWORD"
 
   # 横浜市立図書館 (LIMEDIO系)
   # yokohama:
-  #   card_number: "9023109473"
-  #   password: "yokTk4dakb$"
+  #   card_number: "YOKOHAMA_CARD"
+  #   password: "YOKOHAMA_PASSWORD"
 
   # 神奈川県立図書館 (LIMEDIO系)
   # kanagawa_pref:
-  #   card_number: "267818"
-  #   password: "kanTk4dakb$"
+  #   card_number: "KANAGAWA_PREF_CARD"
+  #   password: "KANAGAWA_PREF_PASSWORD"
 
   # 町田市立図書館 (NEC LiCS-XP)
   # machida:
-  #   card_number: "80003858"
-  #   password: "tk4dakbc"
+  #   card_number: "MACHIDA_CARD"
+  #   password: "MACHIDA_PASSWORD"
 
   # 海老名市立図書館 (TRC/CCC独自系)
   # ebina:
-  #   card_number: "102193638"
-  #   password: "Tk4dakb$"
+  #   card_number: "EBINA_CARD"
+  #   password: "EBINA_PASSWORD"
 
   # 秦野市立図書館 (NEC LiCS-Re SaaS)
   # hadano:
-  #   card_number: "11607553"
-  #   password: "11607553"
+  #   card_number: "HADANO_CARD"
+  #   password: "HADANO_PASSWORD"
 
   # 大和市立図書館 (NEC LiCS-XP)
   # yamato:
-  #   card_number: "0193777422"
-  #   password: "JH8OUX"
+  #   card_number: "YAMATO_CARD"
+  #   password: "SAGAMIHARA_PASSWORD"
 
   # 伊勢原市立図書館 (NEC LiCS-Re SaaS)
   # isehara:
-  #   card_number: "0191452200"
-  #   password: "iseJH8OUX"
+  #   card_number: "ISEHARA_CARD"
+  #   password: "ISEHARA_PASSWORD"
 
   # 厚木市立図書館 (LIMEDIO系)
   # atsugi:
-  #   card_number: "6078520"
-  #   password: "3269"
+  #   card_number: "ATSUGI_CARD"
+  #   password: "ATSUGI_PASSWORD"

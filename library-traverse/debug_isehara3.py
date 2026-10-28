@@ -5,8 +5,8 @@ from playwright.async_api import async_playwright
 import httpx
 
 BASE = "https://www.is.licsre-saas.jp/isehara"
-CARD = "0191452200"
-PWD = "iseJH8OUX"
+CARD = "ISEHARA_CARD"
+PWD = "ISEHARA_PASSWORD"
 
 HEADERS = {"User-Agent": "Mozilla/5.0 Chrome/120.0.0.0", "Accept-Language": "ja"}
 

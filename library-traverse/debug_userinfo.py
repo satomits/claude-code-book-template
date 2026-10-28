@@ -64,8 +64,8 @@ async def check_yamato_playwright():
 
         await page.goto(f"{BASE}/licsxp-opac/WOpacMnuTopInitAction.do?WebLinkFlag=1")
         # JavaScriptログインボタンをクリック
-        await page.fill('input[name="username"]', "0193777422")
-        await page.fill('input[name="j_password"]', "JH8OUX")
+        await page.fill('input[name="username"]', "YAMATO_CARD")
+        await page.fill('input[name="j_password"]', "SAGAMIHARA_PASSWORD")
         # type="button"のログインボタン
         await page.click('input[value="ログイン"]')
         await page.wait_for_load_state("networkidle")
@@ -99,8 +99,8 @@ async def check_kawasaki_pages():
         soup = BeautifulSoup(r.text, "lxml")
         login_form = next((f for f in soup.find_all("form") if "inputForm" in f.get("action", "")), None)
         data = {inp["name"]: inp.get("value", "") for inp in login_form.find_all("input") if inp.get("name")}
-        data["textUserId"] = "190001690055"
-        data["textPassword"] = "32693269"
+        data["textUserId"] = "KAWASAKI_CARD"
+        data["textPassword"] = "KAWASAKI_PASSWORD"
         data["buttonLogin"] = "ログイン"
         action = urljoin(str(r.url), login_form.get("action", ""))
         await c.post(action, data=data)
@@ -129,8 +129,8 @@ async def check_kawasaki_pages():
 
 async def main():
     await check_kawasaki_pages()
-    await check_licsre_userinfo("秦野市立図書館", "https://www.ip.licsre-saas.jp/hadano", "11607553", "JH8OUX")
-    await check_licsre_userinfo("伊勢原市立図書館", "https://www.is.licsre-saas.jp/isehara", "0191452200", "iseJH8OUX")
+    await check_licsre_userinfo("秦野市立図書館", "https://www.ip.licsre-saas.jp/hadano", "HADANO_CARD", "HADANO_PASSWORD")
+    await check_licsre_userinfo("伊勢原市立図書館", "https://www.is.licsre-saas.jp/isehara", "ISEHARA_CARD", "ISEHARA_PASSWORD")
     await check_yamato_playwright()
 
 

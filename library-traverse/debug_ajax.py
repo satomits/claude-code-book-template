@@ -16,8 +16,8 @@ async def main():
         soup = BeautifulSoup(r.text, "lxml")
         form = soup.find("form")
         data = {inp["name"]: inp.get("value", "") for inp in form.find_all("input") if inp.get("name")}
-        data["txt_usercd"] = "9023109473"
-        data["txt_password"] = "yokTk4dakb$"
+        data["txt_usercd"] = "YOKOHAMA_CARD"
+        data["txt_password"] = "YOKOHAMA_PASSWORD"
         data["submit_btn_login"] = "ログイン"
         await c.post(urljoin(str(r.url), form.get("action", "")), data=data)
 

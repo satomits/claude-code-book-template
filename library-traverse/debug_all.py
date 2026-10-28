@@ -17,8 +17,8 @@ async def check_atsugi():
         page = await browser.new_page(locale="ja-JP")
         BASE = "https://www.lib.mytownclub.com"
         await page.goto(f"{BASE}/winj/opac/login.do?lang=ja")
-        await page.fill('input[name="txt_usercd"]', "6078520")
-        await page.fill('input[name="txt_password"]', "3269")
+        await page.fill('input[name="txt_usercd"]', "ATSUGI_CARD")
+        await page.fill('input[name="txt_password"]', "ATSUGI_PASSWORD")
         await page.click('input[name="submit_btn_login"]')
         await page.wait_for_selector('text=ログアウト', timeout=10000)
 
@@ -58,8 +58,8 @@ async def check_kawasaki():
             print("  Login form not found")
             return
         data = {inp["name"]: inp.get("value", "") for inp in login_form.find_all("input") if inp.get("name")}
-        data["textUserId"] = "190001690055"
-        data["textPassword"] = "32693269"
+        data["textUserId"] = "KAWASAKI_CARD"
+        data["textPassword"] = "KAWASAKI_PASSWORD"
         data["buttonLogin"] = "ログイン"
         action = urljoin(str(r.url), login_form.get("action", ""))
         r2 = await c.post(action, data=data)
@@ -152,8 +152,8 @@ async def check_kanagawa_pref():
         page = await browser.new_page(locale="ja-JP")
         BASE = "https://www.klnet.pref.kanagawa.jp"
         await page.goto(f"{BASE}/winj/opac/login.do?lang=ja")
-        await page.fill('input[name="txt_usercd"]', "267818")
-        await page.fill('input[name="txt_password"]', "kanTk4dakb$")
+        await page.fill('input[name="txt_usercd"]', "KANAGAWA_PREF_CARD")
+        await page.fill('input[name="txt_password"]', "KANAGAWA_PREF_PASSWORD")
         await page.click('input[name="submit_btn_login"]')
 
         try:
@@ -186,9 +186,9 @@ async def check_kanagawa_pref():
 async def main():
     await check_atsugi()
     await check_kawasaki()
-    await check_nec_lics("秦野市立図書館", "https://www.ip.licsre-saas.jp/hadano", "11607553", "JH8OUX")
-    await check_nec_lics("伊勢原市立図書館", "https://www.is.licsre-saas.jp/isehara", "0191452200", "iseJH8OUX")
-    await check_nec_lics("大和市立図書館", "https://library.city.yamato.kanagawa.jp", "0193777422", "JH8OUX")
+    await check_nec_lics("秦野市立図書館", "https://www.ip.licsre-saas.jp/hadano", "HADANO_CARD", "HADANO_PASSWORD")
+    await check_nec_lics("伊勢原市立図書館", "https://www.is.licsre-saas.jp/isehara", "ISEHARA_CARD", "ISEHARA_PASSWORD")
+    await check_nec_lics("大和市立図書館", "https://library.city.yamato.kanagawa.jp", "YAMATO_CARD", "SAGAMIHARA_PASSWORD")
     await check_kanagawa_pref()
 
 

@@ -11,8 +11,8 @@ async def main():
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page(locale="ja-JP")
         await page.goto(f"{BASE}/winj/opac/login.do?lang=ja")
-        await page.fill('input[name="txt_usercd"]', "6078520")
-        await page.fill('input[name="txt_password"]', "3269")
+        await page.fill('input[name="txt_usercd"]', "ATSUGI_CARD")
+        await page.fill('input[name="txt_password"]', "ATSUGI_PASSWORD")
         await page.click('input[name="submit_btn_login"]')
         await page.wait_for_selector('text=ログアウト', timeout=10000)
 

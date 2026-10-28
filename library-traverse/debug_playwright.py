@@ -14,8 +14,8 @@ async def main():
 
         # ログイン
         await page.goto(f"{BASE}/winj/opac/login.do?lang=ja")
-        await page.fill('input[name="txt_usercd"]', "9023109473")
-        await page.fill('input[name="txt_password"]', "yokTk4dakb$")
+        await page.fill('input[name="txt_usercd"]', "YOKOHAMA_CARD")
+        await page.fill('input[name="txt_password"]', "YOKOHAMA_PASSWORD")
         await page.click('input[name="submit_btn_login"]')
         await page.wait_for_selector('text=ログアウト', timeout=10000)
         print("ログイン成功")

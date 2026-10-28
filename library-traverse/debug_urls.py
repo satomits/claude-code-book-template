@@ -23,8 +23,8 @@ async def check_kawasaki_logged_in():
         soup = BeautifulSoup(r.text, "lxml")
         login_form = next((f for f in soup.find_all("form") if "inputForm" in f.get("action", "")), None)
         data = {inp["name"]: inp.get("value", "") for inp in login_form.find_all("input") if inp.get("name")}
-        data["textUserId"] = "190001690055"
-        data["textPassword"] = "32693269"
+        data["textUserId"] = "KAWASAKI_CARD"
+        data["textPassword"] = "KAWASAKI_PASSWORD"
         data["buttonLogin"] = "ログイン"
         action = urljoin(str(r.url), login_form.get("action", ""))
         r2 = await c.post(action, data=data)
@@ -83,8 +83,8 @@ async def check_yamato_links():
         soup = BeautifulSoup(r.text, "lxml")
         form = soup.find("form")
         data = {inp["name"]: inp.get("value", "") for inp in form.find_all("input") if inp.get("name")}
-        data["username"] = "0193777422"
-        data["j_password"] = "JH8OUX"
+        data["username"] = "YAMATO_CARD"
+        data["j_password"] = "SAGAMIHARA_PASSWORD"
         action = urljoin(str(r.url), form.get("action", "") or f"{base_url}/licsxp-opac/WOpacMnuTopInitAction.do")
         r2 = await c.post(action, data=data)
         soup2 = BeautifulSoup(r2.text, "lxml")
@@ -110,8 +110,8 @@ async def check_atsugi_report_html():
         page = await browser.new_page(locale="ja-JP")
         BASE = "https://www.lib.mytownclub.com"
         await page.goto(f"{BASE}/winj/opac/login.do?lang=ja")
-        await page.fill('input[name="txt_usercd"]', "6078520")
-        await page.fill('input[name="txt_password"]', "3269")
+        await page.fill('input[name="txt_usercd"]', "ATSUGI_CARD")
+        await page.fill('input[name="txt_password"]', "ATSUGI_PASSWORD")
         await page.click('input[name="submit_btn_login"]')
         await page.wait_for_selector('text=ログアウト', timeout=10000)
         await page.goto(f"{BASE}/winj/opac/reserve-list.do?lang=ja")
@@ -127,8 +127,8 @@ async def check_atsugi_report_html():
 
 async def main():
     await check_kawasaki_logged_in()
-    await check_nec_lics_saas_links("秦野市立図書館", "https://www.ip.licsre-saas.jp/hadano", "11607553", "JH8OUX")
-    await check_nec_lics_saas_links("伊勢原市立図書館", "https://www.is.licsre-saas.jp/isehara", "0191452200", "iseJH8OUX")
+    await check_nec_lics_saas_links("秦野市立図書館", "https://www.ip.licsre-saas.jp/hadano", "HADANO_CARD", "HADANO_PASSWORD")
+    await check_nec_lics_saas_links("伊勢原市立図書館", "https://www.is.licsre-saas.jp/isehara", "ISEHARA_CARD", "ISEHARA_PASSWORD")
     await check_yamato_links()
     await check_atsugi_report_html()
 

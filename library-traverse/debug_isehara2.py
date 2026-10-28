@@ -4,8 +4,8 @@ from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 
 BASE = "https://www.is.licsre-saas.jp/isehara"
-CARD = "0191452200"
-PWD = "iseJH8OUX"
+CARD = "ISEHARA_CARD"
+PWD = "ISEHARA_PASSWORD"
 
 
 async def main():

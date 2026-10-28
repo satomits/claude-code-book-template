@@ -3,8 +3,8 @@ import traceback
 import anyio
 from src.library_traverse.libraries.ebina import EbinaLibrary
 
-CARD = "102193638"
-PWD = "Tk4dakb$"
+CARD = "EBINA_CARD"
+PWD = "EBINA_PASSWORD"
 
 
 async def test():
