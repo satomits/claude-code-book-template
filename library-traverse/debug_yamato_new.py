@@ -32,6 +32,9 @@ async def dump(page, label: str) -> None:
     print(f"has ログアウト: {'ログアウト' in html}")
     soup = BeautifulSoup(html, "html.parser")
     for i, form in enumerate(soup.find_all("form")):
+        if form.find("input", {"name": "condition1Text"}):
+            print(f"form[{i}] (search form, skipped) action={form.get('action')!r}")
+            continue
         print(f"form[{i}] id={form.get('id')!r} name={form.get('name')!r} "
               f"action={form.get('action')!r} method={form.get('method')!r}")
         for inp in form.find_all(["input", "button", "select"]):
@@ -82,17 +85,17 @@ async def main() -> None:
         await page.wait_for_load_state("networkidle")
         await dump(page, "TOP")
 
-        # ログイン画面へ（リンク or ボタン）
-        for sel in ["text=ログイン", "text=マイページ", "text=利用照会"]:
-            loc = page.locator(sel).first
-            if await loc.count():
+        # ログイン画面へ（#login ボタン → OpacInitLoginAction.do）
+        for sel in ["#login", "#man-pinf"]:
+            if await page.locator(sel).count():
                 print(f"\n>> click {sel}")
                 try:
-                    await loc.click()
+                    async with page.expect_navigation(timeout=30000):
+                        await page.locator(sel).first.click()
                     await page.wait_for_load_state("networkidle")
                     await dump(page, f"after click {sel}")
                 except Exception as e:  # noqa: BLE001
-                    print(f"   click failed: {type(e).__name__}")
+                    print(f"   click failed: {type(e).__name__}: {str(e)[:200]}")
                 if await page.locator('input[type="password"]').count():
                     break
 
@@ -116,7 +119,11 @@ async def main() -> None:
                 loc = page.locator(sel).first
                 if await loc.count():
                     print(f">> login click {sel}")
-                    await loc.click()
+                    try:
+                        async with page.expect_navigation(timeout=30000):
+                            await loc.click()
+                    except Exception as e:  # noqa: BLE001
+                        print(f"   no navigation: {type(e).__name__}")
                     clicked = True
                     break
             if not clicked:
@@ -130,7 +137,11 @@ async def main() -> None:
                 if await loc.count():
                     print(f"\n>> click link containing {label}: text={(await loc.inner_text())[:20]!r}")
                     try:
-                        await loc.click()
+                        try:
+                            async with page.expect_navigation(timeout=30000):
+                                await loc.click()
+                        except Exception as e:  # noqa: BLE001
+                            print(f"   no navigation: {type(e).__name__}")
                         await page.wait_for_load_state("networkidle")
                         await page.wait_for_timeout(1500)
                         await dump(page, f"PAGE {label}")
