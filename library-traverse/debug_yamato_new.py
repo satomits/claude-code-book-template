@@ -58,6 +58,17 @@ async def dump(page, label: str) -> None:
         tdcounts = sorted({len(tr.find_all("td")) for tr in rows})
         print(f"table[{i}] id={table.get('id')!r} class={table.get('class')!r} rows={len(rows)} "
               f"td_per_row={tdcounts} th={heads}")
+        if "list" in (table.get("class") or []):
+            for r_i, tr in enumerate(rows[:4]):
+                shape = []
+                for c in tr.find_all(["th", "td"]):
+                    t = c.get_text(" ", strip=True)
+                    kind = ("date" if re.fullmatch(r"20\d\d[/.-]\d{1,2}[/.-]\d{1,2}", t)
+                            else "num" if re.fullmatch(r"\d+", t) else f"txt{len(t)}")
+                    if c.name == "th" and r_i == 0:
+                        kind = "head"
+                    shape.append(f"{c.name}:{kind}:{'/'.join(c.get('class') or [])}")
+                print(f"     row{r_i}: {shape}")
     # 表以外のリスト型（div/ul）で並んでいる可能性もあるので、class名の頻度を出す
     classes: dict[str, int] = {}
     for el in soup.find_all(class_=True):
@@ -132,23 +143,20 @@ async def main() -> None:
             await page.wait_for_timeout(2000)
             await dump(page, "AFTER LOGIN")
 
-            for label in ["貸出", "予約"]:
-                loc = page.locator(f'a:has-text("{label}"):visible').first
-                if await loc.count():
-                    print(f"\n>> click link containing {label}: text={(await loc.inner_text())[:20]!r}")
-                    try:
-                        try:
-                            async with page.expect_navigation(timeout=30000):
-                                await loc.click()
-                        except Exception as e:  # noqa: BLE001
-                            print(f"   no navigation: {type(e).__name__}")
-                        await page.wait_for_load_state("networkidle")
-                        await page.wait_for_timeout(1500)
-                        await dump(page, f"PAGE {label}")
-                        await page.go_back()
-                        await page.wait_for_load_state("networkidle")
-                    except Exception as e:  # noqa: BLE001
-                        print(f"   failed: {type(e).__name__}")
+            for url in ["WOpacMnuTopToPwdLibraryAction.do?gamen=usrrsv",
+                        "WOpacMnuTopToPwdLibraryAction.do?gamen=usrlend"]:
+                print(f"\n>> goto {url}")
+                await page.goto("https://library.city.yamato.kanagawa.jp/licsxp-opac/" + url)
+                await page.wait_for_load_state("networkidle")
+                await dump(page, f"PAGE {url}")
+            print("\n>> click #stat-resv")
+            try:
+                async with page.expect_navigation(timeout=30000):
+                    await page.locator("#stat-resv").click()
+                await page.wait_for_load_state("networkidle")
+                await dump(page, "PAGE via #stat-resv")
+            except Exception as e:  # noqa: BLE001
+                print(f"   failed: {type(e).__name__}")
 
         print("\n----- requests (document/xhr) -----")
         seen = set()
