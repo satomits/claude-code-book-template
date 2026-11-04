@@ -8,14 +8,19 @@ NEC LiCS-XP (LiCS-WebII) 系図書館スクレイパー
   hidden: hash, gamenid, j_username, h_username
   ログインボタン: type="button" (JavaScript で submit)
 
-大和市 ログイン後の予約ページ:
-  URL: OpacLoginAction.do (ログイン後直接予約ページへリダイレクト)
+大和市 ログイン手順 (2026年11月のシステム更新後):
+  WOpacMnuTopInitAction.do (検索画面) → #login ボタン → OpacInitLoginAction.do (ログイン認証画面)
+  → j_security_check → OpacLoginAction.do (詳細検索画面)
+
+大和市 予約ページ:
+  URL: WOpacMnuTopToPwdLibraryAction.do?gamen=usrrsv
   table#ItemDetaTable:
     ヘッダー行: No.(th), 資料名, 書誌種別, 受取館連絡方法, 予約日割当日, 順位, 予約状態, 取置期限, ...
     データ行:   th=行番号, td[0]=資料名+著者+出版者, td[4]=順位, td[5]=予約状態, td[6]=取置期限
 
 大和市 貸出ページ:
   URL: WOpacMnuTopToPwdLibraryAction.do?gamen=usrlend
+  table.list (id無し): No.(th), 資料名, 書誌種別, 貸出館, 貸出日, 返却期日, 予約数, 延長回数, 貸出
 """
 import re
 from datetime import date, datetime
@@ -128,6 +133,13 @@ class YamatoLibrary:
         page = self._page
         assert page is not None
         await page.goto(f"{BASE_YAMATO}/licsxp-opac/WOpacMnuTopInitAction.do?WebLinkFlag=1")
+        await page.wait_for_load_state("networkidle")
+        # 2026年11月のシステム更新後、トップは検索画面になり、ログイン欄は無い。
+        # ヘッダーの「ログイン」ボタン(#login)で OpacInitLoginAction.do（ログイン認証画面）へ移る。
+        if not await page.locator('input[name="username"]').count():
+            async with page.expect_navigation():
+                await page.locator("#login").click()
+            await page.wait_for_load_state("networkidle")
         await page.fill('input[name="username"]', self.card_number)
         await page.fill('input[name="j_password"]', self.password)
         await page.click('input[value="ログイン"]')
