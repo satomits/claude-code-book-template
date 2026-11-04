@@ -85,7 +85,7 @@ class NecLicsSaasScraper:
             )
         except PlaywrightTimeout:
             pass
-        self._portal_soup = BeautifulSoup(await page.content(), "html.parser")
+        self._portal_soup = _checked(BeautifulSoup(await page.content(), "html.parser"))
         return self._portal_soup
 
     async def get_loans(self) -> list[LoanItem]:
@@ -120,7 +120,7 @@ class NecLicsSaasScraper:
             try:
                 await page.evaluate(f"search_detail('{biblid}')")
                 await page.wait_for_load_state("networkidle")
-                soup = BeautifulSoup(await page.content(), "html.parser")
+                soup = _checked(BeautifulSoup(await page.content(), "html.parser"))
                 item.author = _parse_author_from_searchdetail(soup)
                 await page.go_back()
                 await page.wait_for_load_state("networkidle")
@@ -139,6 +139,20 @@ class NecLicsSaasScraper:
             except Exception:
                 pass
 
+
+
+def _checked(soup: BeautifulSoup) -> BeautifulSoup:
+    """図書館側のエラー画面（例: 「利用照会エラー」「server.common.exception.ErrorException」）なら、
+    その文言をそのままエラーとして上げる。障害時に「0件」と誤表示しないため。"""
+    texts = [
+        t.strip() for t in soup.find_all(string=True)
+        if t.strip() and t.parent.name not in ("script", "style", "noscript")
+    ]
+    exc = next((t for t in texts if re.search(r"[\w.]+Exception\b", t)), None)
+    if exc:
+        head = next((t for t in texts if "エラー" in t and len(t) <= 40), "")
+        raise RuntimeError(" ".join(x for x in (head, exc) if x))
+    return soup
 
 def _parse_date(text: str) -> date | None:
     for fmt in ("%Y/%m/%d", "%Y-%m-%d", "%Y年%m月%d日"):
@@ -353,7 +367,7 @@ class HadanoLibrary(NecLicsSaasScraper):
         assert page is not None
         await page.goto(self._url("/webopac/userlist.do?type=3&page=1"))
         await page.wait_for_load_state("networkidle")
-        soup = BeautifulSoup(await page.content(), "html.parser")
+        soup = _checked(BeautifulSoup(await page.content(), "html.parser"))
         items, urls = _parse_userlist_reservations(soup, self.base_url)
         self._res_detail_urls = urls
         return items
@@ -379,7 +393,7 @@ class IseharaLibrary(NecLicsSaasScraper):
         assert page is not None
         await page.goto(self._url("/webopac/usermenu.do"))
         await page.wait_for_load_state("networkidle")
-        self._portal_soup = BeautifulSoup(await page.content(), "html.parser")
+        self._portal_soup = _checked(BeautifulSoup(await page.content(), "html.parser"))
 
     async def get_loans(self) -> list[LoanItem]:
         await self._ensure_portal_visited()
@@ -387,7 +401,7 @@ class IseharaLibrary(NecLicsSaasScraper):
         assert page is not None
         await page.goto(self._url("/webopac/portal_lendlist.do"))
         await page.wait_for_load_state("networkidle")
-        soup = BeautifulSoup(await page.content(), "html.parser")
+        soup = _checked(BeautifulSoup(await page.content(), "html.parser"))
         table = soup.find("table")
         if table is None:
             return []
@@ -401,7 +415,7 @@ class IseharaLibrary(NecLicsSaasScraper):
         assert page is not None
         await page.goto(self._url("/webopac/userlist.do?type=3&page=1"))
         await page.wait_for_load_state("networkidle")
-        soup = BeautifulSoup(await page.content(), "html.parser")
+        soup = _checked(BeautifulSoup(await page.content(), "html.parser"))
         items, urls = _parse_userlist_reservations(soup, self.base_url)
         self._res_detail_urls = urls
         return items
