@@ -18,6 +18,8 @@ class LibraryHours:
     closed_weekdays: list[int] = field(default_factory=list)   # 休館曜日 (0=月)
     closed_monthly: list[tuple[int, int]] = field(default_factory=list)  # (第n, 曜日) 月次休館
     closed_last_weekday: int | None = None  # 最終X曜日が休館 (0=月)
+    day_hours: dict[int, tuple[str, str]] = field(default_factory=dict)  # 曜日別の開館時間 (祝日以外)
+    open_on_holiday: bool = False  # 休館曜日・月次休館日が祝日なら開館
     year_end_close: tuple[int, int] = (12, 29)  # 年末休館開始
     year_start_open: tuple[int, int] = (1, 5)   # 年始開館
 
@@ -45,11 +47,13 @@ HOURS_DATA: dict[str, LibraryHours] = {
         closed_weekdays=[0],           # 月曜休館
         closed_monthly=[(2, 3)],       # 第2木曜
     ),
-    "machida": LibraryHours(
+    "machida": LibraryHours(  # 中央図書館
         weekday_open="10:00", weekday_close="20:00",
         weekend_open="10:00", weekend_close="17:00",
         closed_weekdays=[0],           # 月曜休館
         closed_monthly=[(2, 3)],       # 第2木曜
+        day_hours={3: ("10:00", "17:00")},  # 木曜は17時まで
+        open_on_holiday=True,
     ),
     "ebina": LibraryHours(
         weekday_open="9:00", weekday_close="21:00",
@@ -139,14 +143,16 @@ def _get_hours_for_date(d: date, hours: LibraryHours) -> str:
     if _is_year_end_holiday(d, hours):
         return "休館"
 
+    holiday_open = hours.open_on_holiday and jpholiday.is_holiday(d)
+
     # 曜日休館チェック
-    if d.weekday() in hours.closed_weekdays:
+    if d.weekday() in hours.closed_weekdays and not holiday_open:
         return "休館"
 
     # 月次休館チェック（第n X曜日）
     for n, weekday in hours.closed_monthly:
         target = _nth_weekday_of_month(d.year, d.month, n, weekday)
-        if d == target:
+        if d == target and not holiday_open:
             return "休館"
 
     # 最終X曜日休館チェック
@@ -156,6 +162,9 @@ def _get_hours_for_date(d: date, hours: LibraryHours) -> str:
             return "休館"
 
     # 開館時間を返す
-    if _is_weekend_or_holiday(d):
-        return f"{hours.weekend_open}-{hours.weekend_close}"
-    return f"{hours.weekday_open}-{hours.weekday_close}"
+    if jpholiday.is_holiday(d) or d.weekday() not in hours.day_hours:
+        if _is_weekend_or_holiday(d):
+            return f"{hours.weekend_open}-{hours.weekend_close}"
+        return f"{hours.weekday_open}-{hours.weekday_close}"
+    open_, close = hours.day_hours[d.weekday()]
+    return f"{open_}-{close}"
