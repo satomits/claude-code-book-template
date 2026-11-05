@@ -20,6 +20,8 @@ class LibraryHours:
     closed_last_weekday: int | None = None  # 最終X曜日が休館 (0=月)
     day_hours: dict[int, tuple[str, str]] = field(default_factory=dict)  # 曜日別の開館時間 (祝日以外)
     open_on_holiday: bool = False  # 休館曜日・月次休館日が祝日なら開館
+    holiday_shift: bool = False    # 月次休館日が祝日なら、直後の平日を休館
+    date_hours: dict[tuple[int, int], tuple[str, str]] = field(default_factory=dict)  # 日付別の開館時間 (月, 日)
     year_end_close: tuple[int, int] = (12, 29)  # 年末休館開始
     year_start_open: tuple[int, int] = (1, 5)   # 年始開館
 
@@ -32,10 +34,13 @@ HOURS_DATA: dict[str, LibraryHours] = {
         closed_weekdays=[0],           # 月曜休館
         closed_monthly=[(2, 3)],       # 第2木曜
     ),
-    "kawasaki": LibraryHours(
-        weekday_open="9:30", weekday_close="19:00",
-        weekend_open="9:30", weekend_close="17:00",
+    "kawasaki": LibraryHours(  # 柿生分館
+        weekday_open="10:00", weekday_close="18:00",
+        weekend_open="10:00", weekend_close="17:00",
         closed_monthly=[(3, 0)],       # 第3月曜
+        open_on_holiday=True,
+        holiday_shift=True,
+        date_hours={(12, 28): ("10:00", "17:00")},  # 12/28は17時閉館
     ),
     "yokohama": LibraryHours(
         weekday_open="9:30", weekday_close="19:00",
@@ -109,6 +114,16 @@ def _last_weekday_of_month(year: int, month: int, weekday: int) -> date:
     return last_day - timedelta(days=diff)
 
 
+def _shifted_closed_day(target: date) -> date | None:
+    """休館日が祝日に当たるとき、代わりに休館する直後の平日を返す。"""
+    if not jpholiday.is_holiday(target):
+        return None
+    d = target + timedelta(days=1)
+    while _is_weekend_or_holiday(d):
+        d += timedelta(days=1)
+    return d
+
+
 def _is_year_end_holiday(d: date, hours: LibraryHours) -> bool:
     """年末年始の休館日かどうか。"""
     ye_m, ye_d = hours.year_end_close
@@ -154,6 +169,8 @@ def _get_hours_for_date(d: date, hours: LibraryHours) -> str:
         target = _nth_weekday_of_month(d.year, d.month, n, weekday)
         if d == target and not holiday_open:
             return "休館"
+        if hours.holiday_shift and d == _shifted_closed_day(target):
+            return "休館"
 
     # 最終X曜日休館チェック
     if hours.closed_last_weekday is not None:
@@ -162,6 +179,9 @@ def _get_hours_for_date(d: date, hours: LibraryHours) -> str:
             return "休館"
 
     # 開館時間を返す
+    if (d.month, d.day) in hours.date_hours:
+        open_, close = hours.date_hours[(d.month, d.day)]
+        return f"{open_}-{close}"
     if jpholiday.is_holiday(d) or d.weekday() not in hours.day_hours:
         if _is_weekend_or_holiday(d):
             return f"{hours.weekend_open}-{hours.weekend_close}"
