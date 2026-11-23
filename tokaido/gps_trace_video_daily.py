@@ -19,6 +19,7 @@ Usage:
 """
 
 import argparse
+import bisect
 import functools
 import json
 import math
@@ -531,6 +532,8 @@ def fuse_gps_points(
     gopro_accuracy: float = 10.0,
     divergence_threshold_m: float = 100.0,
     max_gap_sec: int = 3,
+    max_speed_kmh: float = 50.0,
+    max_interp_gap_sec: int = 600,
 ) -> list[dict]:
     """GoProとiPhoneのGPSデータを融合する。
 
@@ -547,12 +550,14 @@ def fuse_gps_points(
     for ip in iphone_points:
         key = ip["time"].replace(microsecond=0)
         iphone_by_sec[key] = ip
+    iphone_times = sorted(iphone_by_sec)
 
     fused = []
     n_iphone = 0
     n_gopro_only = 0
     n_blended = 0
     n_diverged = 0
+    n_interp = 0
     for gp in gopro_points:
         key = gp["time"].replace(microsecond=0)
         ip = iphone_by_sec.get(key)
@@ -570,9 +575,37 @@ def fuse_gps_points(
                     "source": "iphone", "gps_unstable": False,
                 })
                 n_diverged += 1
-            else:
-                fused.append({**gp, "source": "gopro"})
-                n_gopro_only += 1
+                continue
+
+            # iPhoneが長く途切れている区間（トンネル等）: GoProも測位を失って離れた位置に
+            # 留まることがある。前後のiPhone点から max_speed_kmh で届かないGoPro点は
+            # 前後のiPhone点の直線補間で置き換える
+            j = bisect.bisect_left(iphone_times, key)
+            if near is None and 0 < j < len(iphone_times):
+                t0, t1 = iphone_times[j - 1], iphone_times[j]
+                p0, p1 = iphone_by_sec[t0], iphone_by_sec[t1]
+                span = (t1 - t0).total_seconds()
+                v = max_speed_kmh / 3.6
+                reachable = (haversine_m(p0, gp) <= v * (key - t0).total_seconds() + divergence_threshold_m
+                             and haversine_m(gp, p1) <= v * (t1 - key).total_seconds() + divergence_threshold_m)
+                # 途切れが長いと届く範囲が広がるので、直前の点からの跳びも見る
+                if reachable and fused:
+                    dt_prev = (gp["time"] - fused[-1]["time"]).total_seconds()
+                    reachable = haversine_m(fused[-1], gp) <= v * max(dt_prev, 1.0) + divergence_threshold_m
+                if span <= max_interp_gap_sec and not reachable:
+                    r = (key - t0).total_seconds() / span
+                    fused.append({
+                        **gp,
+                        "lat": p0["lat"] + (p1["lat"] - p0["lat"]) * r,
+                        "lon": p0["lon"] + (p1["lon"] - p0["lon"]) * r,
+                        "alt": p0["alt"] + (p1["alt"] - p0["alt"]) * r,
+                        "source": "interp", "gps_unstable": False,
+                    })
+                    n_interp += 1
+                    continue
+
+            fused.append({**gp, "source": "gopro"})
+            n_gopro_only += 1
             continue
 
         # GoProとiPhoneの距離差を計算
@@ -629,11 +662,17 @@ def fuse_gps_points(
             n_blended += 1
 
     # iPhone記録開始前のGoPro点: GoProが起動直後に前回の位置を保持していることがある。
-    # 最初のiPhone点から大きくずれていれば、その位置で固定する（距離に加算しない）
+    # 最初のiPhone点へありえない速度で跳んでいる場合だけ、ずれた点をその位置で固定する
+    # （距離に加算しない）。GoProが正常で、iPhone開始前に移動していただけなら触らない
     first_ip = next((i for i, p in enumerate(fused) if p["source"] != "gopro"), None)
     n_lead = 0
     if first_ip:
         anchor = fused[first_ip]
+        last = fused[first_ip - 1]
+        dt = (anchor["time"] - last["time"]).total_seconds()
+        jump_kmh = haversine_m(last, anchor) / dt * 3.6 if dt > 0 else 0.0
+        if jump_kmh <= max_speed_kmh:
+            first_ip = 0
         for i in range(first_ip):
             if haversine_m(fused[i], anchor) > divergence_threshold_m:
                 fused[i] = {**fused[i], "lat": anchor["lat"], "lon": anchor["lon"],
@@ -642,6 +681,7 @@ def fuse_gps_points(
 
     print(f"      GPS融合: iPhone採用={n_iphone}  GoPro採用={n_gopro_only}  "
           f"加重平均={n_blended}  GoPro異常値→iPhone={n_diverged}  "
+          f"iPhone途切れ中のGoPro異常値→補間={n_interp}  "
           f"iPhone開始前のGoPro異常値={n_lead}")
     return fused
 
