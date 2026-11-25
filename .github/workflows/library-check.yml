@@ -54,16 +54,42 @@ jobs:
         with:
           path: library-traverse/_site
 
+      # アップロード直後はartifact一覧APIに反映されておらず、deploy-pagesが
+      # 「Found 0 artifact(s)」で失敗することがある。見えるまで待ってからデプロイする
+      - name: Wait for artifact to become visible
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 12); do
+            n=$(gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
+                  --jq '[.artifacts[] | select(.name=="github-pages")] | length' || echo 0)
+            if [ "$n" -ge 1 ]; then
+              echo "artifactを確認しました (${i}回目)"
+              exit 0
+            fi
+            echo "artifactがまだ見えません。5秒待機します (${i}/12)"
+            sleep 5
+          done
+          echo "60秒待っても見えませんでしたが、デプロイを試みます"
+
       - name: Deploy to GitHub Pages (attempt 1)
         id: deploy1
         uses: actions/deploy-pages@v5
         continue-on-error: true
+
+      - name: Wait before retry (attempt 2)
+        if: steps.deploy1.outcome == 'failure'
+        run: sleep 20
 
       - name: Deploy to GitHub Pages (attempt 2)
         id: deploy2
         if: steps.deploy1.outcome == 'failure'
         uses: actions/deploy-pages@v5
         continue-on-error: true
+
+      - name: Wait before retry (attempt 3)
+        if: steps.deploy2.outcome == 'failure'
+        run: sleep 40
 
       - name: Deploy to GitHub Pages (attempt 3)
         id: deploy3
@@ -77,7 +103,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           echo "3回とも失敗したため、次回実行に影響しないようartifactを削除します"
-          ARTIFACT_IDS=$(gh api "/repos/${{ github.repository }}/actions/artifacts" \
+          ARTIFACT_IDS=$(gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
             --jq '.artifacts[] | select(.name=="github-pages") | .id')
           for id in $ARTIFACT_IDS; do
             echo "deleting artifact id=$id"
