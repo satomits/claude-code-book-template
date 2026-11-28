@@ -797,6 +797,15 @@ def render_map(
     return img
 
 
+def _draw_heart(draw: ImageDraw.ImageDraw, x: int, y: int, size: int, color: str) -> None:
+    """(x, y) を左上とする size×size の枠にハートを描く。"""
+    r = size / 4
+    draw.ellipse([x, y, x + 2 * r, y + 2 * r], fill=color)
+    draw.ellipse([x + 2 * r, y, x + 4 * r, y + 2 * r], fill=color)
+    draw.polygon([(x + 0.07 * size, y + 1.45 * r), (x + size - 0.07 * size, y + 1.45 * r),
+                  (x + size / 2, y + size)], fill=color)
+
+
 def render_stats_bar(
     point: dict,
     global_distance_km: float,   # 積算距離
@@ -820,7 +829,8 @@ def render_stats_bar(
         ("距離",  f"{global_distance_km:.2f} km",        "#69F0AE"),  # 積算距離
     ]
     if heart_rate_bpm is not None:
-        items.append(("❤ 心拍", f"{heart_rate_bpm:.0f} bpm", "#FF4081"))
+        # ❤ はフォントにない環境があるので、文字ではなく図形で描く
+        items.append(("心拍", f"{heart_rate_bpm:.0f} bpm", "#FF4081"))
     col_w    = w // len(items)
     y_center = h // 2
 
@@ -837,7 +847,14 @@ def render_stats_bar(
             vw, vh = vb[2] - vb[0], vb[3] - vb[1]
             total_h = lh + 4 + vh
             y0 = y_center - total_h // 2
-            draw.text((cx - lw // 2, y0),          label, font=font_label, fill="#9E9E9E")
+            if label == "心拍":
+                hs = lh + 2                      # ハートの大きさ（ラベルの高さに合わせる）
+                gap = 6
+                lx = cx - (hs + gap + lw) // 2
+                _draw_heart(draw, lx, y0 + lb[1] + (lh - hs) // 2, hs, color)
+                draw.text((lx + hs + gap - lb[0], y0), label, font=font_label, fill="#9E9E9E")
+            else:
+                draw.text((cx - lw // 2, y0),      label, font=font_label, fill="#9E9E9E")
             draw.text((cx - vw // 2, y0 + lh + 4), value, font=font_val,   fill=color)
 
     for idx in range(1, len(items)):
